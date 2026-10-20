@@ -31,6 +31,12 @@ const SLIDES = [
     ]
   },
   {
+    id: "wc2",
+    type: "wordcloud",
+    heading: "Apakah yang menjadikan seorang guru itu hebat?",
+    sub: "Masukkan 3 perkataan yang menggambarkan ciri guru hebat."
+  },
+  {
     id: "p3",
     type: "poll",
     heading: "Apabila pelajar sukar memahami konsep Sains, amalan manakah paling kerap anda gunakan?",
@@ -85,7 +91,7 @@ function initFirebase() {
 const ROOT = "libatUrus";
 
 function metaRef() { return db.ref(`${ROOT}/meta`); }
-function wcRef() { return db.ref(`${ROOT}/wc/entries`); }
+function wcRef(id) { return db.ref(`${ROOT}/wc/${id}/entries`); }
 function pollRef(id) { return db.ref(`${ROOT}/polls/${id}/votes`); }
 
 // Sequential blue ramp for word-cloud weighting (light + dark aware via CSS vars isn't trivial inline, so pick readable steps)

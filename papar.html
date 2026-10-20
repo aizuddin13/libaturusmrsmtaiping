@@ -51,7 +51,7 @@ const resultCard = document.getElementById("resultCard");
 SLIDES.forEach(s => {
   const chip = document.createElement("button");
   chip.className = "nav-chip";
-  chip.textContent = s.type === "wordcloud" ? "Induksi" : s.id.toUpperCase();
+  chip.textContent = s.type === "wordcloud" ? ("WC " + s.id.toUpperCase()) : s.id.toUpperCase();
   chip.dataset.id = s.id;
   chip.addEventListener("click", () => goTo(s.id));
   slideNav.appendChild(chip);
@@ -82,7 +82,7 @@ function renderResults(id) {
   const live = document.getElementById("live");
 
   if (slide.type === "wordcloud") {
-    const ref = wcRef();
+    const ref = wcRef(id);
     const handler = snap => renderWordCloud(live, snap.val());
     ref.on("value", handler);
     activeListeners.push(() => ref.off("value", handler));

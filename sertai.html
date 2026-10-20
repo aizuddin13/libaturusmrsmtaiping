@@ -69,7 +69,7 @@ function renderSlide(id) {
       e.preventDefault();
       const words = [w1.value, w2.value, w3.value].map(v => v.trim()).filter(Boolean);
       if (words.length !== 3) return;
-      wcRef().push({ words, ts: Date.now() }).then(() => {
+      wcRef(id).push({ words, ts: Date.now() }).then(() => {
         localStorage.setItem(storageKey(id), "1");
         slideArea.innerHTML = thankYouCard(slide);
       });
