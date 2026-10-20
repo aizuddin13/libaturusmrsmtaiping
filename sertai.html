@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sertai Sesi — MRSM Taiping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<div class="shell" style="max-width:540px;">
+  <div class="nav-row">
+    <span class="pill"><span class="live-dot"></span> LIVE</span>
+    <span class="pill mono" id="connState">menyambung…</span>
+  </div>
+
+  <div id="slideArea"></div>
+</div>
+
+<script src="app.js"></script>
+<script>
+initFirebase();
+
+const slideArea = document.getElementById("slideArea");
+const connState = document.getElementById("connState");
+
+db.ref(".info/connected").on("value", snap => {
+  connState.textContent = snap.val() ? "tersambung" : "putus sambungan";
+});
+
+let currentId = null;
+
+metaRef().child("currentSlide").on("value", snap => {
+  const id = snap.val() || "wc";
+  if (id !== currentId) {
+    currentId = id;
+    renderSlide(id);
+  }
+});
+
+function storageKey(id) { return `jawab:${id}`; }
+
+function renderSlide(id) {
+  const slide = SLIDES[slideIndexById(id)];
+  const already = localStorage.getItem(storageKey(id));
+
+  if (slide.type === "wordcloud") {
+    if (already) {
+      slideArea.innerHTML = thankYouCard(slide);
+      return;
+    }
+    slideArea.innerHTML = `
+      <div class="card">
+        <h2 style="font-size:22px;">${slide.heading}</h2>
+        <p>${slide.sub}</p>
+        <form id="wcForm" style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+          <input type="text" id="w1" placeholder="Perkataan 1" maxlength="24" required autocomplete="off">
+          <input type="text" id="w2" placeholder="Perkataan 2" maxlength="24" required autocomplete="off">
+          <input type="text" id="w3" placeholder="Perkataan 3" maxlength="24" required autocomplete="off">
+          <button class="btn btn-primary btn-block" type="submit" style="margin-top:6px;">Hantar</button>
+        </form>
+      </div>`;
+    document.getElementById("wcForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const words = [w1.value, w2.value, w3.value].map(v => v.trim()).filter(Boolean);
+      if (words.length !== 3) return;
+      wcRef().push({ words, ts: Date.now() }).then(() => {
+        localStorage.setItem(storageKey(id), "1");
+        slideArea.innerHTML = thankYouCard(slide);
+      });
+    });
+    return;
+  }
+
+  // poll
+  if (already !== null) {
+    slideArea.innerHTML = thankYouCard(slide, Number(already));
+    return;
+  }
+  slideArea.innerHTML = `
+    <div class="card">
+      <h2 style="font-size:20px;">${slide.heading}</h2>
+      <div id="opts" style="display:flex;flex-direction:column;gap:10px;margin-top:16px;"></div>
+    </div>`;
+  const opts = document.getElementById("opts");
+  slide.options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "option-btn";
+    btn.innerHTML = `<span class="dot"></span><span>${opt}</span>`;
+    btn.addEventListener("click", () => {
+      pollRef(id).push({ choice: i, ts: Date.now() }).then(() => {
+        localStorage.setItem(storageKey(id), String(i));
+        slideArea.innerHTML = thankYouCard(slide, i);
+      });
+    });
+    opts.appendChild(btn);
+  });
+}
+
+function thankYouCard(slide, choiceIndex) {
+  const sub = slide.type === "poll" && choiceIndex !== undefined
+    ? `Jawapan anda: <strong>${slide.options[choiceIndex]}</strong>`
+    : "Jawapan anda telah direkodkan.";
+  return `
+    <div class="card" style="text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">✓</div>
+      <h2 style="font-size:20px;">Terima kasih!</h2>
+      <p>${sub}</p>
+      <p class="mono" style="font-size:13px;color:var(--text-muted);">Menunggu soalan seterusnya daripada fasilitator…</p>
+    </div>`;
+}
+</script>
+</body>
+</html>

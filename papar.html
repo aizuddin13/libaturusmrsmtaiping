@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Papar Keputusan — MRSM Taiping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+<div class="shell" style="max-width:980px;">
+  <div class="nav-row" style="justify-content:space-between;">
+    <span class="eyebrow" style="margin:0;">Panel Fasilitator</span>
+    <span class="pill mono" id="connState">menyambung…</span>
+  </div>
+
+  <div class="nav-row" id="slideNav"></div>
+
+  <div class="card" id="resultCard" style="margin-bottom:16px;min-height:220px;"></div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-outline" id="prevBtn">&larr; Sebelum</button>
+    <button class="btn btn-outline" id="nextBtn">Seterusnya &rarr;</button>
+    <button class="btn btn-outline" id="resetBtn" style="margin-left:auto;color:var(--critical);border-color:var(--critical);">Reset Sesi Ini</button>
+  </div>
+
+  <p class="mono" style="font-size:12px;color:var(--text-muted);margin-top:28px;">
+    Kongsi pautan ini kepada peserta: <strong id="joinLink"></strong>
+  </p>
+</div>
+
+<script src="app.js"></script>
+<script>
+initFirebase();
+
+document.getElementById("joinLink").textContent = location.origin + location.pathname.replace("papar.html", "sertai.html");
+
+const connState = document.getElementById("connState");
+db.ref(".info/connected").on("value", snap => {
+  connState.textContent = snap.val() ? "tersambung" : "putus sambungan";
+});
+
+const slideNav = document.getElementById("slideNav");
+const resultCard = document.getElementById("resultCard");
+
+SLIDES.forEach(s => {
+  const chip = document.createElement("button");
+  chip.className = "nav-chip";
+  chip.textContent = s.type === "wordcloud" ? "Induksi" : s.id.toUpperCase();
+  chip.dataset.id = s.id;
+  chip.addEventListener("click", () => goTo(s.id));
+  slideNav.appendChild(chip);
+});
+
+function goTo(id) {
+  metaRef().child("currentSlide").set(id);
+}
+
+let currentId = "wc";
+let activeListeners = [];
+
+function clearListeners() {
+  activeListeners.forEach(off => off());
+  activeListeners = [];
+}
+
+metaRef().child("currentSlide").on("value", snap => {
+  currentId = snap.val() || "wc";
+  [...slideNav.children].forEach(c => c.classList.toggle("active", c.dataset.id === currentId));
+  renderResults(currentId);
+});
+
+function renderResults(id) {
+  clearListeners();
+  const slide = SLIDES[slideIndexById(id)];
+  resultCard.innerHTML = `<h2 style="font-size:22px;">${slide.heading}</h2><div id="live"></div>`;
+  const live = document.getElementById("live");
+
+  if (slide.type === "wordcloud") {
+    const ref = wcRef();
+    const handler = snap => renderWordCloud(live, snap.val());
+    ref.on("value", handler);
+    activeListeners.push(() => ref.off("value", handler));
+  } else {
+    const ref = pollRef(id);
+    const handler = snap => renderPollResults(live, slide.options, snap.val());
+    ref.on("value", handler);
+    activeListeners.push(() => ref.off("value", handler));
+  }
+}
+
+document.getElementById("prevBtn").addEventListener("click", () => {
+  const i = Math.max(0, slideIndexById(currentId) - 1);
+  goTo(SLIDES[i].id);
+});
+document.getElementById("nextBtn").addEventListener("click", () => {
+  const i = Math.min(SLIDES.length - 1, slideIndexById(currentId) + 1);
+  goTo(SLIDES[i].id);
+});
+document.getElementById("resetBtn").addEventListener("click", () => {
+  if (!confirm("Padam semua respons untuk sesi ini? Tindakan ini tidak boleh diundur.")) return;
+  db.ref(ROOT).remove().then(() => goTo("wc"));
+});
+</script>
+</body>
+</html>
