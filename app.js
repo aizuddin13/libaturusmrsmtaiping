@@ -9,7 +9,7 @@ const SLIDES = [
   {
     id: "p1",
     type: "poll",
-    heading: "Dalam amalan pengajaran Matematik anda, tabiat manakah paling mencabar untuk diamalkan secara konsisten?",
+    heading: "Dalam amalan pengajaran Subjek Teras anda, tabiat manakah paling mencabar untuk diamalkan secara konsisten?",
     options: [
       "Bersedia rapi sebelum setiap kelas",
       "Memberi perhatian individu kepada setiap pelajar",
@@ -39,7 +39,7 @@ const SLIDES = [
   {
     id: "p3",
     type: "poll",
-    heading: "Apabila pelajar sukar memahami konsep Matematik, amalan manakah paling kerap anda gunakan?",
+    heading: "Apabila pelajar sukar memahami sesuatu konsep, amalan manakah paling kerap anda gunakan?",
     options: [
       "Guna analogi dan contoh kehidupan sebenar",
       "Tunjuk cara / demonstrasi",
